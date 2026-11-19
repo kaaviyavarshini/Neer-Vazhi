@@ -1,4 +1,0 @@
-[    1359ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyAgIwpdiFPyE0lPd_eMc4dpzQB9aR0I4O8:1
-[    1364ms] [ERROR] Failed to load Google Photorealistic 3D Tileset: Eq @ http://localhost:8765/js/viewer.js:40
-[   44197ms] [WARNING] terrain: tile height unavailable, using fallback -80 m @ http://localhost:8765/js/terrain.js:73
-[   48930ms] [LOG] [Rain] Started simulation with 3000 drops. @ http://localhost:8765/js/rain.js:342
