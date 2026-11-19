@@ -7,7 +7,15 @@
 
   <!-- CesiumJS pinned via jsDelivr CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Widgets/widgets.css" />
+  <script>
+    window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/';
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Cesium.js"></script>
+
+  <!-- Fonts: <link> (not CSS @import) so they don't block first render -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Oswald:wght@600;700&display=swap" rel="stylesheet" />
 
   <!-- Custom styles -->
   <link rel="stylesheet" href="css/style.css" />
@@ -19,15 +27,73 @@
 
   <!-- Top-Left Title Overlay -->
   <header class="header-overlay">
-    <h1 class="header-title">OMR Floods</h1>
-    <div class="header-subtitle">Perungudi · Google Photorealistic 3D + rain model</div>
+    <div class="header-top-row">
+      <h1 class="header-title">OMR + Pallikaranai</h1>
+      <a href="story.html" class="nav-story-link" title="Open Keyless Three.js Scene">STORY VIEW &rarr;</a>
+    </div>
+    <div class="header-subtitle">OMR &amp; Pallikaranai Marsh · Google Photorealistic 3D + rain model</div>
   </header>
+
+  <!-- Top-Right Inspector & Control Panel -->
+  <aside id="inspector-panel" class="inspector-overlay" aria-label="Rain and Flood Controls">
+    <!-- Header / Live Stats -->
+    <div class="panel-section stats-section">
+      <div class="stat-value" id="stat-road-km">0.00 km</div>
+      <div class="stat-label">of road under more than 15 cm of water</div>
+    </div>
+
+    <!-- Rain Control Section -->
+    <div class="panel-section rain-section">
+      <div class="control-row">
+        <label for="rain-preset-select" class="panel-label">RAIN EVENT</label>
+        <select id="rain-preset-select" class="panel-select"></select>
+      </div>
+
+      <div class="control-row slider-row">
+        <div class="slider-header">
+          <label for="rain-slider" class="panel-label">RAINFALL</label>
+          <span id="rain-slider-val" class="slider-value">150 mm</span>
+        </div>
+        <input type="range" id="rain-slider" class="panel-range" min="0" max="500" value="150" step="5" />
+      </div>
+
+      <!-- Hourly Rain Chart with Playhead -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <span class="chart-title">HOURLY RAIN</span>
+          <span id="chart-peak-info" class="chart-subtitle">Peak: --</span>
+        </div>
+        <canvas id="rain-chart" width="260" height="44" role="img" aria-label="Hourly rainfall chart for the selected rain event"></canvas>
+      </div>
+    </div>
+
+    <!-- Flood Depth Legend -->
+    <div class="panel-section legend-section">
+      <div class="legend-header">
+        <span class="panel-label">FLOOD DEPTH</span>
+      </div>
+      <div class="legend-items">
+        <div class="legend-item"><span class="legend-swatch" style="background:#ffeb3b;"></span> 15–30cm</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#ff9800;"></span> 30–60cm</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#f44336;"></span> &gt;60cm</div>
+      </div>
+      <div class="legend-gradient-bar"></div>
+      <div class="legend-labels">
+        <span>5 cm</span>
+        <span>50 cm</span>
+        <span>&gt;1 m</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Centred Cinematic Caption Overlay -->
+  <div id="timeline-caption" class="caption-overlay" aria-live="polite"></div>
 
   <!-- Bottom-Left Action Controls -->
   <nav class="controls-overlay" aria-label="Scene Controls">
-    <button id="btn-collects" class="control-btn" type="button">COLLECTS</button>
-    <button id="btn-roads" class="control-btn" type="button">ROADS</button>
-    <button id="btn-replay" class="control-btn" type="button">REPLAY</button>
+    <button id="btn-collects" class="control-btn active" type="button" title="Toggle Surface Water Layer">COLLECTS</button>
+    <button id="btn-roads" class="control-btn active" type="button" title="Toggle Flooded Roads Layer">ROADS</button>
+    <button id="btn-replay" class="control-btn" type="button" title="Refly Camera to Study Area">REPLAY</button>
   </nav>
 
   <!-- Bottom-Right Disclaimer -->

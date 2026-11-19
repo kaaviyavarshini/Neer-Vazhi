@@ -361,6 +361,15 @@ export function stop() {
 }
 
 /**
+ * Whether the rain simulation is currently running.
+ * Exposed as a function because `isRunning` is a mutable module-local binding.
+ * @returns {boolean}
+ */
+export function isRainRunning() {
+  return isRunning;
+}
+
+/**
  * Returns the cell accumulation counts.
  * @returns {Uint32Array}
  */

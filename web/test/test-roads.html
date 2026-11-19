@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flooded Roads & Draped Water Benchmark</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <!-- Header -->
+  <header class="header-overlay">
+    <h1 class="header-title">OMR Flooded Roads Test</h1>
+    <div class="header-subtitle">Road Network Flood Depth Classification</div>
+  </header>
+
+  <!-- Live Stats -->
+  <aside id="flood-stats" class="stats-overlay">
+    <div class="stat-value" id="stat-road-km">-- km</div>
+    <div class="stat-label">of road under more than 15 cm of water</div>
+  </aside>
+
+  <!-- Legend -->
+  <aside id="flood-legend" class="legend-overlay">
+    <div class="legend-title">FLOOD DEPTH</div>
+    <div class="legend-section">
+      <div class="legend-subtitle">Road Network</div>
+      <div class="legend-row">
+        <span class="legend-swatch" style="background: #ffeb3b;"></span>
+        <span class="legend-text">15 – 30 cm</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-swatch" style="background: #ff9800;"></span>
+        <span class="legend-text">30 – 60 cm</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-swatch" style="background: #f44336;"></span>
+        <span class="legend-text">&gt; 60 cm</span>
+      </div>
+    </div>
+    <div class="legend-section">
+      <div class="legend-subtitle">Surface Water</div>
+      <div class="legend-row">
+        <span class="legend-gradient"></span>
+      </div>
+      <div class="legend-row legend-labels">
+        <span>5 cm</span>
+        <span>50 cm</span>
+        <span>&gt; 1 m</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Controls -->
+  <nav class="controls-overlay">
+    <button id="btn-collects" class="control-btn active" type="button">COLLECTS</button>
+    <button id="btn-roads" class="control-btn active" type="button">ROADS</button>
+    <button id="btn-replay" class="control-btn" type="button">REPLAY</button>
+  </nav>
+
+  <!-- Disclaimer -->
+  <aside class="disclaimer-overlay">
+    Visualisation, not an engineering flood model
+  </aside>
+
+  <script type="module">
+    import { createViewer, flyToStudyArea } from '../js/viewer.js';
+    import { initTerrain } from '../js/terrain.js';
+    import { initPooling } from '../js/pooling.js';
+    import { initRoads, showRealMapScene, toggleWaterLayer, toggleRoadsLayer } from '../js/roads.js';
+
+    async function run() {
+      const { viewer } = await createViewer('cesiumContainer');
+      await initTerrain(viewer);
+      initPooling(viewer);
+      await initRoads(viewer);
+
+      flyToStudyArea(viewer, 12.95, 80.2275);
+
+      const statKm = document.getElementById('stat-road-km');
+      const btnWater = document.getElementById('btn-collects');
+      const btnRoads = document.getElementById('btn-roads');
+      const btnReplay = document.getElementById('btn-replay');
+
+      btnWater.addEventListener('click', () => {
+        const vis = toggleWaterLayer();
+        btnWater.classList.toggle('active', vis);
+      });
+
+      btnRoads.addEventListener('click', () => {
+        const vis = toggleRoadsLayer();
+        btnRoads.classList.toggle('active', vis);
+      });
+
+      btnReplay.addEventListener('click', () => {
+        flyToStudyArea(viewer, 12.95, 80.2275);
+      });
+
+      await showRealMapScene({
+        rainfallMm: 150,
+        runoffCoeff: 0.8,
+        onStatsUpdate: ({ floodedRoadKm }) => {
+          statKm.textContent = `${floodedRoadKm} km`;
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', run);
+  </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 {
-  "south": 12.925,
-  "west":  80.205,
-  "north": 12.975,
-  "east":  80.250,
+  "south": 12.890,
+  "west":  80.190,
+  "north": 12.990,
+  "east":  80.270,
   "cellSizeM":    30,
   "exaggeration": 10,
   "runoffCoeff":  0.8,

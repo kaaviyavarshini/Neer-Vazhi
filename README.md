@@ -113,13 +113,20 @@ python scripts/fetch_rain.py
 
 ### 4. Run Web Application
 
-Serve the `web/` directory using Python's static HTTP server:
+Run the dev server via npm or Python:
 
 ```bash
+# Using Node (npm):
+npm run dev
+
+# Or using Python:
 python -m http.server 8765 --directory web
 ```
 
-Navigate to: **[http://localhost:8765](http://localhost:8765)**
+Navigate to:
+- **Google Photorealistic 3D Scene**: **[http://localhost:8765/google3d.html](http://localhost:8765/google3d.html)**
+- **Three.js Keyless Scene**: **[http://localhost:8765/story.html](http://localhost:8765/story.html)**
+- **Root Entry**: **[http://localhost:8765/](http://localhost:8765/)**
 
 ---
 
@@ -179,24 +186,33 @@ Neer-Vazhi/
 │   └── fetch_rain.py             # Fetches historical hourly rainfall from Open-Meteo
 │
 └── web/                          # Static web application root
-    ├── index.html                # Main application interface and Cesium container
+    ├── google3d.html             # Scene 1–5 Google Photorealistic 3D interactive viewer
+    ├── story.html                # Keyless stylised 3D scene (Three.js 3x DEM + rain + water)
+    ├── index.html                # Baseline multi-scene presentation interface
     ├── css/
-    │   └── style.css             # Glassmorphism dark UI theme and controls
-    ├── data/                     # Compact client data files consumed by the browser
-    │   ├── area.json             # Runtime study box definition
-    │   ├── dem.json              # 4,800-cell elevation grid (EGM2008 orthometric)
-    │   ├── rain.json             # 72-hour precipitation time series
-    │   └── roads.json            # 8,700+ vector road linestrings
-    └── js/
-        ├── config.js             # Client-side Google key export (git-ignored)
-        ├── main.js               # Application bootstrap and Cesium initialization
-        ├── scene-manager.js      # 5-scene state controller and camera tweens
-        ├── elevation-layer.js    # Scene 2: 10× exaggerated DEM point cloud slab
-        ├── rain-sim.js           # Scene 3: Particle orchestration & Worker bridge
-        ├── flood-layer.js        # Scenes 4-5: Depression pooling and draped road overlay
-        ├── ui.js                 # Stepper navigation, telemetry stats, and legend
-        └── workers/
-            └── rain-worker.js    # Dedicated Web Worker: typed-array gradient descent
+    │   └── style.css             # Glassmorphic dark UI theme, controls, and legends
+    ├── data/                     # Preprocessed runtime data consumed by browser
+    │   ├── area.json             # Study area bounding box & simulation parameters
+    │   ├── grid.json             # Resampled 30m DEM grid (orthometric heights)
+    │   ├── rain.json             # Historical (Michaung 2023, 2015) & synthetic rainfall
+    │   ├── roads.json            # Densified OpenStreetMap road linestring network
+    │   ├── labels.json           # Neighborhood and locality point labels
+    │   └── marsh.json            # Pallikaranai marshland boundary polygon
+    ├── js/
+    │   ├── config.js             # Client Google Maps API Key export (git-ignored)
+    │   ├── viewer.js             # Cesium Viewer & Google Photorealistic 3D Tileset setup
+    │   ├── terrain.js            # Scene 2: 10× exaggerated DEM slab mesh & ENU frame
+    │   ├── rain.js               # Scene 3: 3,000 rain drops with D8 steepest descent roll
+    │   ├── pooling-core.js       # Barnes (2014) Priority-Flood & level-pool volume solver
+    │   ├── pooling.worker.js     # Web Worker executing Priority-Flood off main thread
+    │   ├── pooling.js            # Pooling worker interface & animated water rising
+    │   ├── roads.js              # Scene 5: Draped water layer, depth-classified roads & stats
+    │   └── main.js               # Application bootstrap and user interaction bindings
+    └── test/
+        ├── pooling.test.mjs      # Automated unit tests for depression filling & pooling
+        ├── test-pooling.html     # Interactive pooling visualizer and benchmark harness
+        ├── test-rain.html        # Interactive rain physics and 60 FPS benchmark harness
+        └── test-roads.html       # Draped flooded roads and layer toggle benchmark harness
 ```
 
 ---

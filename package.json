@@ -1,0 +1,24 @@
+{
+  "name": "neer-vazhi",
+  "version": "1.0.0",
+  "description": "OMR Rainwater Runoff & Pooling 3D Visualiser (Perungudi - Thoraipakkam, Chennai)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "test": "node web/test/pooling.test.mjs",
+    "config": "python scripts/make_config.py",
+    "build:grid": "python scripts/build_grid.py"
+  },
+  "keywords": [
+    "cesium",
+    "threejs",
+    "gis",
+    "flood-visualization",
+    "chennai",
+    "omr"
+  ],
+  "author": "",
+  "license": "MIT"
+}

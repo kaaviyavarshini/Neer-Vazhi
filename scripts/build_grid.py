@@ -272,6 +272,13 @@ def main():
                 continue
 
             if geom_type == "LineString" and "highway" in props:
+                h_type = props.get("highway", "")
+                # Skip minor service drives, footpaths, tracks, steps, and unnamed residential lanes
+                if h_type in ("footway", "service", "track", "path", "steps", "pedestrian", "cycleway", "corridor", "construction"):
+                    continue
+                if h_type == "residential" and not props.get("name"):
+                    continue
+
                 sub_lines = clip_linestring(coords, west, south, east, north)
                 for line in sub_lines:
                     if len(line) >= 2:
@@ -279,7 +286,7 @@ def main():
                         roads_list.append({
                             "id": road_id,
                             "name": props.get("name", ""),
-                            "highway": props.get("highway", "residential"),
+                            "highway": h_type or "residential",
                             "coords": densified,
                         })
                         road_id += 1

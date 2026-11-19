@@ -27,6 +27,7 @@ let exag = 0, anim = 0, ready = null, localPos = null;
 export async function initTerrain(v) {
   viewer = v;
   const res = await fetch('data/grid.json');
+  if (!res.ok) throw new Error(`Failed to load data/grid.json: HTTP ${res.status}`);
   grid = await res.json();
   let lo = Infinity, hi = -Infinity;
   for (const h of grid.heights) { if (h < lo) lo = h; if (h > hi) hi = h; }
@@ -57,21 +58,22 @@ function ramp(t) {
 }
 
 async function computeBaseHeight() {
-  // DATUM: the DEM (Copernicus COP30) is orthometric, relative to sea level (EGM2008 geoid).
-  // Google 3D Tiles use WGS84 ELLIPSOID heights. In Chennai the geoid is ~85 m below the
-  // ellipsoid, so DEM metres can't be added to tile heights directly. Instead we sample the
-  // tiles' own height at the bbox centre (ellipsoid datum) and float the slab so its lowest
-  // cell is CLEARANCE_M above that. Relief within the slab is relative (h - minH) only.
-  // Caveat: the sample hits roofs/trees if the centre is built up -- fine for a visualisation.
   const lon = (grid.west + grid.east) / 2, lat = (grid.south + grid.north) / 2;
   let tileH;
-  try {
-    const [p] = await viewer.scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(lon, lat)]);
-    tileH = p.height;
-  } catch (e) { console.warn('sampleHeightMostDetailed failed:', e.message); }
+  const has3DTiles = viewer.scene.primitives.length > 0 && !!viewer.scene.primitives.get(0)?.isCesium3DTileset;
+  if (has3DTiles) {
+    try {
+      const res = await viewer.scene.sampleHeightMostDetailed([Cesium.Cartographic.fromDegrees(lon, lat)]);
+      if (res && res.length > 0 && Number.isFinite(res[0].height)) {
+        tileH = res[0].height;
+      }
+    } catch (e) {
+      console.warn('sampleHeightMostDetailed failed:', e.message);
+    }
+  }
   if (!Number.isFinite(tileH)) {
-    console.warn(`terrain: tile height unavailable, using fallback ${FALLBACK_TILE_H} m`);
-    tileH = FALLBACK_TILE_H;
+    tileH = has3DTiles ? FALLBACK_TILE_H : 10.0;
+    console.warn(`terrain: tile height unavailable, using fallback ${tileH} m`);
   }
   return tileH + CLEARANCE_M;
 }
@@ -106,7 +108,7 @@ function build() {
     },
     indices: idx,
     primitiveType: Cesium.PrimitiveType.TRIANGLES,
-    boundingSphere: Cesium.BoundingSphere.fromVertices(Array.from(pos)),
+    boundingSphere: Cesium.BoundingSphere.fromVertices(pos),
   });
   prim = viewer.scene.primitives.add(new Cesium.Primitive({
     geometryInstances: new Cesium.GeometryInstance({ geometry }),
@@ -137,16 +139,27 @@ export function setExaggeration(x) {
   outline.modelMatrix = m;
 }
 
+export function tweenExaggeration(to, durationMs = ANIM_MS) {
+  return new Promise((resolve) => {
+    const from = exag, t0 = performance.now(), id = ++anim;
+    const step = (now) => {
+      if (id !== anim) return resolve();
+      const f = Math.min((now - t0) / durationMs, 1);
+      const e = f < 0.5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;   // ease-in-out cubic
+      setExaggeration(from + (to - from) * e);
+      if (f < 1) {
+        requestAnimationFrame(step);
+      } else {
+        setExaggeration(to);
+        resolve();
+      }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
 function tween(to, done) {
-  const from = exag, t0 = performance.now(), id = ++anim;
-  const step = (now) => {
-    if (id !== anim) return;                                  // superseded by a newer tween
-    const f = Math.min((now - t0) / ANIM_MS, 1);
-    const e = f < 0.5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;   // ease-in-out cubic
-    setExaggeration(from + (to - from) * e);
-    if (f < 1) requestAnimationFrame(step); else if (done) done();
-  };
-  requestAnimationFrame(step);
+  tweenExaggeration(to, ANIM_MS).then(() => { if (done) done(); });
 }
 
 /** Build the mesh (hidden, flat) if needed, without showing it. */
@@ -156,6 +169,13 @@ export async function prepare() {
     ready ??= computeBaseHeight().then((h) => { baseHeight = h; build(); });
     await ready;
   }
+}
+
+/** Shows the slab flat (exaggeration = 0). */
+export async function showFlat() {
+  await prepare();
+  setExaggeration(0);
+  prim.show = outline.show = true;
 }
 
 /** Local ENU vertex positions [x,y,relief] per cell (row-major) and the unscaled ENU frame; null before prepare(). */
