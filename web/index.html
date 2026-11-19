@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neer Vazhi – OMR Flood Visualiser</title>
+
+  <!-- CesiumJS 1.117 from CDN (pinned) -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.117/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.117/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p id="loading-msg">Initialising 3D map…</p>
+</div>
+
+<!-- Cesium globe -->
+<div id="cesiumContainer"></div>
+
+<!-- Top bar -->
+<div id="topbar">
+  <h1>🌧 Neer Vazhi — OMR Flood Study</h1>
+  <span class="badge">Thoraipakkam · Perungudi · Pallikaranai</span>
+  <span class="badge" style="background:rgba(0,188,212,.12);color:var(--accent);border-color:rgba(0,188,212,.3)">Visualisation only — not an engineering model</span>
+</div>
+
+<!-- Scene info panel -->
+<div id="info-panel">
+  <div class="stat"><span>Scene</span><strong id="ip-scene">1 / 5</strong></div>
+  <div class="stat"><span>Rain accumulation</span><strong id="ip-rain">—</strong></div>
+  <div class="stat"><span>Particles active</span><strong id="ip-particles">—</strong></div>
+  <div class="stat"><span>Max flood depth</span><strong id="ip-depth">—</strong></div>
+</div>
+
+<!-- Scene stepper -->
+<div id="stepper">
+  <button class="step-btn" id="btn-prev" title="Previous scene">◀</button>
+  <div id="scene-dots"></div>
+  <span id="step-label">Loading…</span>
+  <button class="step-btn" id="btn-next" title="Next scene">▶</button>
+  <button class="step-btn" id="btn-play" title="Auto-play">▶️</button>
+</div>
+
+<!-- Colour legend (shown for elevation / flood scenes) -->
+<div id="legend">
+  <h3 id="legend-title">Elevation</h3>
+  <div class="legend-bar"></div>
+  <div class="legend-labels">
+    <span id="leg-low">Low</span>
+    <span id="leg-high">High</span>
+  </div>
+</div>
+
+<!-- Disclaimer -->
+<div id="disclaimer">
+  ⚠ This is a <strong>visualisation</strong>, not an engineering flood model.
+  Terrain exaggerated 10×. DEM: Copernicus COP30. Rain: Open-Meteo archive.
+</div>
+
+<!-- Entry point (ES module) -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

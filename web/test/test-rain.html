@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rain Simulation Benchmark</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Cesium.js"></script>
+  <style>
+    body, html { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0a0e17; font-family: monospace; color: #fff; }
+    #cesiumContainer { width: 100%; height: 100%; position: absolute; }
+    #stats { position: absolute; top: 16px; left: 16px; z-index: 100; background: rgba(0,0,0,0.8); padding: 12px 18px; border-radius: 6px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); }
+    #stats b { color: #00e5ff; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div id="stats">
+    <div>Drops: <b>3,000</b></div>
+    <div>FPS: <b id="fpsVal">--</b></div>
+    <div>Status: <b id="statusVal">Initializing...</b></div>
+    <div>Pits Trapped: <b id="pitsVal">0</b></div>
+  </div>
+
+  <script type="module">
+    import { createViewer, flyToStudyArea } from './js/viewer.js';
+    import { initTerrain, show as showTerrain } from './js/terrain.js';
+    import { initRain, start as startRain, getArrivals, getFps } from './js/rain.js';
+
+    async function run() {
+      const statusEl = document.getElementById('statusVal');
+      const fpsEl = document.getElementById('fpsVal');
+      const pitsEl = document.getElementById('pitsVal');
+
+      const { viewer } = await createViewer('cesiumContainer');
+      statusEl.textContent = 'Loading terrain...';
+      await initTerrain(viewer);
+      await showTerrain();
+
+      // Camera view
+      flyToStudyArea(viewer, 12.95, 80.2275);
+
+      statusEl.textContent = 'Starting 3,000 rain drops...';
+      await initRain(viewer, 3000);
+      startRain();
+      statusEl.textContent = 'Running (Benchmark)';
+
+      setInterval(() => {
+        fpsEl.textContent = getFps();
+        const arr = getArrivals();
+        let total = 0;
+        for (let i = 0; i < arr.length; i++) total += arr[i];
+        pitsEl.textContent = total.toLocaleString();
+      }, 500);
+    }
+    window.addEventListener('DOMContentLoaded', run);
+  </script>
+</body>
+</html>

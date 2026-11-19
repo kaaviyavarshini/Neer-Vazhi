@@ -1,0 +1,14 @@
+# Secrets (never commit)
+.env
+web/js/config.js
+
+# Downloaded raw data (large)
+data/raw/
+
+# Python
+__pycache__/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db

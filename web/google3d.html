@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OMR Floods — Google Photorealistic 3D</title>
+
+  <!-- CesiumJS pinned via jsDelivr CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Cesium.js"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Cesium 3D Viewport -->
+  <div id="cesiumContainer"></div>
+
+  <!-- Top-Left Title Overlay -->
+  <header class="header-overlay">
+    <h1 class="header-title">OMR Floods</h1>
+    <div class="header-subtitle">Perungudi · Google Photorealistic 3D + rain model</div>
+  </header>
+
+  <!-- Bottom-Left Action Controls -->
+  <nav class="controls-overlay" aria-label="Scene Controls">
+    <button id="btn-collects" class="control-btn" type="button">COLLECTS</button>
+    <button id="btn-roads" class="control-btn" type="button">ROADS</button>
+    <button id="btn-replay" class="control-btn" type="button">REPLAY</button>
+  </nav>
+
+  <!-- Bottom-Right Disclaimer -->
+  <aside class="disclaimer-overlay">
+    Visualisation, not an engineering flood model
+  </aside>
+
+  <!-- ES Module Entry Point -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

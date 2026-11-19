@@ -1,0 +1,37 @@
+- generic [active] [ref=f2e1]:
+  - paragraph [ref=f2e3]: Initialising 3D map…
+  - generic [ref=f2e9]:
+    - generic:
+      - generic:
+        - generic:
+          - link "Cesium ion":
+            - /url: https://cesium.com/
+            - img "Cesium ion"
+  - generic [ref=f2e10]:
+    - heading "🌧 Neer Vazhi — OMR Flood Study" [level=1] [ref=f2e11]
+    - text: Thoraipakkam · Perungudi · Pallikaranai Visualisation only — not an engineering model
+  - generic [ref=f2e12]:
+    - generic [ref=f2e13]:
+      - text: Scene
+      - strong [ref=f2e14]: 1 / 5
+    - generic [ref=f2e15]:
+      - text: Rain accumulation
+      - strong [ref=f2e16]: —
+    - generic [ref=f2e17]:
+      - text: Particles active
+      - strong [ref=f2e18]: —
+    - generic [ref=f2e19]:
+      - text: Max flood depth
+      - strong [ref=f2e20]: —
+  - generic [ref=f2e21]:
+    - button "◀" [ref=f2e22]
+    - text: Loading…
+    - button "▶" [ref=f2e23]
+    - button "▶️" [ref=f2e24]
+  - generic [ref=f2e25]:
+    - heading "Elevation" [level=3] [ref=f2e26]
+    - generic [ref=f2e27]: Low High
+  - generic [ref=f2e28]:
+    - text: ⚠ This is a
+    - strong [ref=f2e29]: visualisation
+    - text: ", not an engineering flood model. Terrain exaggerated 10×. DEM: Copernicus COP30. Rain: Open-Meteo archive."

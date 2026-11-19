@@ -1,0 +1,10 @@
+{
+  "south": 12.925,
+  "west":  80.205,
+  "north": 12.975,
+  "east":  80.250,
+  "cellSizeM":    30,
+  "exaggeration": 10,
+  "runoffCoeff":  0.8,
+  "drops":        3000
+}
