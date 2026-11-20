@@ -8,6 +8,7 @@
  * - Animation: water level rises smoothly over 5 seconds.
  */
 
+import { burnRoads } from './road-burn.js';
 import { grid, getHeightAt, getExaggeration, getMatrix } from './terrain.js';
 
 // Color gradient for water depth
@@ -44,7 +45,32 @@ export function initPooling(v) {
  * @param {number} [options.runoffCoeff=0.8] - Runoff coefficient
  * @returns {Promise<Float32Array>}
  */
-export function computePooling({ rainfallMm = 100, runoffCoeff = 0.8 } = {}) {
+export async function computePooling(opts = {}) {
+  const heights = await getModelHeights();
+  return runPooling(heights, opts);
+}
+
+let burnedHeights = null;
+/** Terrain for the water model: grid heights with roads burned in (area.json roadBurnM; 0 = off). */
+async function getModelHeights() {
+  if (burnedHeights || !grid) return burnedHeights || grid.heights;
+  const get = async (url) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000); // fetch timeout (Phase 2 rule 4)
+    try {
+      const r = await fetch(url, { signal: ctrl.signal });
+      if (!r.ok) throw new Error(`HTTP ${r.status} loading ${url}`);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  };
+  const area = await get('data/area.json');
+  const burn = area.roadBurnM ?? 0;
+  const roads = burn > 0 ? await get('data/roads.json') : null;
+  burnedHeights = burnRoads(grid.heights, grid, roads, burn);
+  return burnedHeights;
+}
+
+function runPooling(heights, { rainfallMm = 100, runoffCoeff = 0.8 } = {}) {
   return new Promise((resolve, reject) => {
     if (!grid) {
       return reject(new Error('Terrain grid not initialized'));
@@ -89,7 +115,7 @@ export function computePooling({ rainfallMm = 100, runoffCoeff = 0.8 } = {}) {
 
     worker.postMessage({
       id: reqId,
-      heights: grid.heights,
+      heights,
       cols: grid.cols,
       rows: grid.rows,
       cellSizeM: grid.cellSizeM || 30,

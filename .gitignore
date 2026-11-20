@@ -14,3 +14,8 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+node_modules/
+.next/
+public/js/config.js
+lib/config.js

@@ -4,300 +4,189 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OMR + Pallikaranai — Where It Pools</title>
+  <!-- Must load first: reports failed scripts / runtime errors on screen -->
+  <script src="js/boot-guard.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='9' r='5' fill='%2300e5ff'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Noto+Serif+Tamil:wght@500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Noto+Serif+Tamil:wght@500&display=swap" rel="stylesheet" /></noscript>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" />
+  <link rel="modulepreload" href="js/pooling-core.js" />
 
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root {
+      --ink: #05090c;
+      --panel: rgba(6, 11, 15, 0.95);
+      --line: rgba(190, 225, 235, 0.14);
+      --paper: #e9f0f2;
+      --mute: #93a8b2;
+      --water: #3fe0ff;
+      --marsh: #1fa3ad;
+      --amber: #ffb454;
+      --serif: 'Instrument Serif', 'Times New Roman', serif;
+      --mono: 'DM Mono', ui-monospace, Consolas, monospace;
+      --tamil: 'Noto Serif Tamil', serif;
     }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #000000;
-      color: #f0f4fc;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--ink); color: var(--paper);
+      font-family: var(--mono);
       -webkit-font-smoothing: antialiased;
     }
+    button { font: inherit; color: inherit; }
 
-    /* 3D Canvas Viewport */
-    #three-viewport {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
+    #three-viewport { position: absolute; inset: 0; z-index: 1; }
+    #rain-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+    #labels-container { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+
+    /* Atmosphere: static vignette (backdrop blur / SVG grain were dropped: they re-rasterise every WebGL frame) */
+    .atmosphere {
+      position: absolute; inset: 0; z-index: 4; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 45%, transparent 50%, rgba(0, 4, 8, 0.6) 100%);
     }
 
-    /* 2D Rain Streaks Canvas Overlay */
-    #rain-canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    /* Label overlay container */
-    #labels-container {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 3;
-      pointer-events: none;
-      overflow: hidden;
-    }
-
+    /* Map labels: survey-sheet style with a ring marker */
     .map-label {
-      position: absolute;
-      font-family: 'Oswald', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #ffffff;
-      text-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.95),
-        0 2px 8px rgba(0, 0, 0, 0.9);
-      pointer-events: none;
-      white-space: nowrap;
-      user-select: none;
-      transition: opacity 0.3s ease;
-      opacity: 0.85;
+      position: absolute; white-space: nowrap; user-select: none; pointer-events: none;
+      font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper);
+      text-shadow: 0 1px 3px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.9);
+      opacity: 0.9;
     }
     .map-label::after {
-      content: '';
-      display: block;
-      width: 4px;
-      height: 4px;
-      background: #00e5ff;
-      border-radius: 50%;
-      margin: 3px auto 0;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+      content: ''; display: block; width: 7px; height: 7px; margin: 4px auto 0;
+      border: 1.5px solid var(--amber); border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(0,0,0,.45);
     }
 
-    /* Top-Left Story Narrative Panel */
+    /* ── Story panel ───────────────────────────────────────── */
     .story-header {
-      position: absolute;
-      top: 24px;
-      left: 24px;
-      z-index: 10;
-      max-width: 460px;
-      background: rgba(10, 14, 20, 0.86);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      padding: 20px 24px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+      position: absolute; top: 24px; left: 24px; z-index: 10; width: min(440px, calc(100vw - 48px));
+      background: var(--panel);
+      border: 1px solid var(--line); border-left: 3px solid var(--amber);
+      border-radius: 4px; padding: 20px 22px 18px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.65);
+      animation: rise .8s cubic-bezier(.2,.7,.2,1) both;
     }
-
+    .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .header-tag {
-      font-family: 'Fira Code', monospace;
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      color: #00e5ff;
-      text-transform: uppercase;
-      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber);
     }
-
+    .header-tag::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--water);
+      box-shadow: 0 0 0 0 rgba(63,224,255,.6); animation: pulse 2.4s ease-out infinite;
+    }
+    .header-tamil { font-family: var(--tamil); font-size: 0.95rem; color: var(--mute); margin-top: 10px; }
     .header-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: 2.0rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #ffffff;
-      line-height: 1.1;
-      margin-bottom: 12px;
+      font-family: var(--serif); font-weight: 400; font-size: 3rem; line-height: 0.98;
+      letter-spacing: -0.01em; color: #fff; margin: 4px 0 14px;
     }
+    .header-title em { color: var(--water); font-style: italic; display: block; }
+    .panel-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .35s ease; }
+    .panel-body > div { overflow: hidden; }
+    .story-header.collapsed .panel-body { grid-template-rows: 0fr; }
+    .story-header.collapsed .header-title { margin-bottom: 0; font-size: 1.9rem; }
+    .story-header.collapsed .header-tamil { display: none; }
+    .header-desc { font-family: system-ui, "Segoe UI", sans-serif; font-size: 0.86rem; line-height: 1.6; color: #b9c9d0; margin-bottom: 14px; }
 
-    .header-desc {
-      font-size: 0.86rem;
-      line-height: 1.55;
-      color: #b0bec5;
-      margin-bottom: 16px;
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .chip {
+      font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute);
+      border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px;
     }
-
-    .header-nav {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .chip b { color: var(--paper); font-weight: 500; }
 
     .nav-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0, 229, 255, 0.15);
-      border: 1px solid #00e5ff;
-      color: #ffffff;
-      font-family: 'Oswald', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-decoration: none;
-      padding: 8px 18px;
-      border-radius: 4px;
-      min-height: 40px;
-      transition: background-color 0.2s ease, color 0.2s ease;
-      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 18px;
+      background: var(--amber); color: #1b1203; border: 0; border-radius: 3px; cursor: pointer;
+      font-size: 0.74rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none;
+      transition: transform .2s ease, background-color .2s ease;
     }
-    .nav-btn:hover {
-      background: #00e5ff;
-      color: #04141a;
-    }
-    .nav-btn:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px #0a0e14, 0 0 0 4px #00e5ff;
-    }
+    .nav-btn:hover { background: #ffc982; transform: translateX(3px); }
 
-    /* Bottom-Right Legend & Interaction Hint */
-    .story-footer {
-      position: absolute;
-      bottom: 24px;
-      right: 24px;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 10px;
-      pointer-events: none;
+    .icon-btn {
+      display: inline-grid; place-items: center; width: 34px; height: 34px; flex: none;
+      background: transparent; border: 1px solid var(--line); border-radius: 3px; cursor: pointer; color: var(--mute);
+      transition: color .2s, border-color .2s;
     }
+    .icon-btn:hover { color: #fff; border-color: rgba(255,255,255,.35); }
+    .icon-btn svg { width: 16px; height: 16px; transition: transform .3s ease; }
+    .story-header.collapsed #panel-toggle svg { transform: rotate(180deg); }
 
-    .legend-card {
-      background: rgba(10, 14, 20, 0.86);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding: 10px 16px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      font-family: 'Fira Code', monospace;
-      font-size: 0.72rem;
-      color: #cfd8dc;
-    }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--water); outline-offset: 3px; }
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    /* ── Dock: layer toggles + view controls ───────────────── */
+    .dock {
+      position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 10;
+      display: flex; align-items: stretch; gap: 4px; padding: 5px; max-width: calc(100vw - 24px);
+      background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+      box-shadow: 0 18px 46px rgba(0,0,0,.6);
+      animation: fade .8s .15s ease both;
     }
-    .swatch-dem {
-      width: 12px;
-      height: 6px;
-      background: #1b2624;
-      border: 1px solid #334440;
-      border-radius: 2px;
+    .dock-group { display: flex; flex-wrap: nowrap; gap: 2px; }
+    .dock-sep { width: 1px; background: var(--line); margin: 6px 4px; }
+    .layer-btn, .view-btn {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px;
+      background: transparent; border: 0; border-radius: 3px; cursor: pointer;
+      font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); white-space: nowrap;
+      transition: background-color .2s, color .2s;
     }
-    .swatch-road {
-      width: 12px;
-      height: 2px;
-      background: #e0dedb;
-    }
-    .swatch-water {
-      width: 12px;
-      height: 6px;
-      background: #00e5ff;
-      border-radius: 2px;
-    }
-    .swatch-marsh {
-      width: 12px;
-      height: 6px;
-      background: #00838f;
-      border-radius: 2px;
-    }
+    .layer-btn:hover, .view-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .layer-btn[aria-pressed="true"] { color: var(--paper); }
+    .layer-btn[aria-pressed="false"] .swatch { opacity: .25; }
+    .layer-btn[aria-pressed="false"] .lbl { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3); }
+    .view-btn[aria-pressed="true"] { color: var(--amber); }
+    .swatch { width: 14px; height: 6px; border-radius: 2px; transition: opacity .2s; }
+    .sw-road { height: 2px; background: #e0dedb; }
+    .sw-marsh { background: var(--marsh); }
+    .sw-water { background: var(--water); box-shadow: 0 0 8px rgba(63,224,255,.6); }
+    .sw-rain { width: 2px; height: 12px; background: #b4e6ff; transform: rotate(15deg); margin: 0 6px; }
+    .sw-labels { width: 8px; height: 8px; border: 1.5px solid var(--amber); border-radius: 50%; background: none; }
 
-    .disclaimer-text {
-      font-family: 'Fira Code', monospace;
-      font-size: 0.68rem;
-      color: #78909c;
-      letter-spacing: 0.05em;
+    .meta-bar {
+      position: absolute; left: 24px; bottom: 24px; right: 24px; z-index: 9; pointer-events: none;
+      display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;
+      font-size: 0.66rem; letter-spacing: 0.06em; color: var(--mute);
     }
+    .disclaimer-text { max-width: 220px; line-height: 1.5; padding-left: 10px; border-left: 2px solid var(--amber); color: #b7c6cd; text-transform: uppercase; }
+    .hint-text { text-align: right; max-width: 200px; line-height: 1.6; text-transform: uppercase; }
 
-    .hint-text {
-      font-family: 'Fira Code', monospace;
-      font-size: 0.68rem;
-      color: #546e7a;
-      letter-spacing: 0.05em;
-    }
-
-    /* Loading Spinner */
+    /* ── Loader ────────────────────────────────────────────── */
     #loading-indicator {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 20;
-      font-family: 'Fira Code', monospace;
-      font-size: 0.85rem;
-      color: #00e5ff;
-      letter-spacing: 0.1em;
-      background: rgba(10, 14, 20, 0.92);
-      padding: 14px 24px;
-      border-radius: 6px;
-      border: 1px solid rgba(0, 229, 255, 0.3);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: opacity 0.4s ease;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+      display: flex; align-items: center; gap: 14px; padding: 14px 22px;
+      font-size: 0.74rem; letter-spacing: 0.18em; color: var(--water);
+      background: rgba(5, 9, 12, .94); border: 1px solid rgba(63,224,255,.28); border-radius: 4px;
+      transition: opacity .4s ease;
     }
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(0, 229, 255, 0.2);
-      border-top-color: #00e5ff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(63,224,255,.2); border-top-color: var(--water); border-radius: 50%; animation: spin .8s linear infinite; }
 
-    /* Slightly brighter hint/disclaimer text for contrast on black */
-    .hint-text { color: #7d93a0; }
-    .disclaimer-text { color: #9fb2bd; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes rise { from { transform: translateY(14px); } } /* transform only: opacity:0 would delay LCP */
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes pulse { 70% { box-shadow: 0 0 0 9px rgba(63,224,255,0); } 100% { box-shadow: 0 0 0 0 rgba(63,224,255,0); } }
 
-    /* ── Mobile ─────────────────────────────────────────────── */
+    /* ── Mobile ────────────────────────────────────────────── */
     @media (max-width: 720px) {
-      .story-header {
-        top: 12px;
-        left: 12px;
-        right: 12px;
-        max-width: none;
-        padding: 14px 16px;
-        max-height: 40vh;
-        overflow-y: auto;
-      }
-      .header-title { font-size: 1.5rem; margin-bottom: 8px; }
-      .header-desc { font-size: 0.8rem; margin-bottom: 12px; }
-      .story-footer {
-        left: 12px;
-        right: 12px;
-        bottom: 12px;
-        align-items: stretch;
-      }
-      .legend-card { gap: 8px 12px; font-size: 0.68rem; }
+      .story-header { top: 10px; left: 10px; width: calc(100vw - 20px); padding: 14px 16px; max-height: 52vh; overflow-y: auto; }
+      .header-title { font-size: 2.2rem; margin-bottom: 10px; }
+      .header-desc { font-size: 0.8rem; }
+      .dock { left: 10px; right: 10px; bottom: 44px; transform: none; justify-content: center; flex-wrap: wrap; max-width: none; }
+      .dock-sep { display: none; }
+      .dock-group { flex-wrap: wrap; justify-content: center; }
+      .layer-btn, .view-btn { padding: 0 9px; min-height: 40px; }
+      .meta-bar { left: 12px; right: 12px; bottom: 10px; }
       .hint-text { display: none; }
-      .disclaimer-text { text-align: center; }
+      .disclaimer-text { max-width: none; }
     }
 
-    /* ── Reduced motion: drop the rain overlay & spinner animation ── */
     @media (prefers-reduced-motion: reduce) {
       #rain-canvas { display: none; }
-      .spinner { animation: none; }
-      .map-label, .nav-btn { transition: none; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
@@ -306,7 +195,7 @@
   <!-- Loading State Indicator -->
   <div id="loading-indicator">
     <div class="spinner"></div>
-    <span>INITIALIZING 3D WATER MODEL...</span>
+    <span>MAPPING THE WATER PATH…</span>
   </div>
 
   <!-- Three.js Viewport Canvas -->
@@ -318,29 +207,49 @@
   <!-- HTML Projected Locality Labels -->
   <div id="labels-container"></div>
 
+  <div class="atmosphere" aria-hidden="true"></div>
+
   <!-- Top-Left Heading & Narrative Panel -->
-  <header class="story-header">
-    <div class="header-tag">NEER VAZHI · WATER PATH</div>
-    <h1 class="header-title">OMR + PALLIKARANAI</h1>
-    <p class="header-desc">
-      Between the elevated IT corridor of OMR and the low-lying Pallikaranai freshwater marshland, monsoonal runoff naturally drains westward into the marsh basin. Urban infill across Perungudi, Thoraipakkam, and Sholinganallur constricts natural drainage channels, causing severe surface pooling along arterial roads.
-    </p>
-    <div class="header-nav">
-      <a href="google3d.html" class="nav-btn">VIEW IN GOOGLE 3D &rarr;</a>
+  <header class="story-header" id="story-panel">
+    <div class="header-top">
+      <div class="header-tag">Neer Vazhi · Water Path</div>
+      <button class="icon-btn" id="panel-toggle" type="button" aria-expanded="true" aria-controls="panel-body" aria-label="Collapse story panel"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l5-5 5 5"/></svg></button>
     </div>
+    <div class="header-tamil" lang="ta">நீர் வழி</div>
+    <h1 class="header-title">OMR + <em>Pallikaranai</em></h1>
+    <div class="panel-body" id="panel-body"><div>
+      <p class="header-desc">
+        Between the elevated IT corridor of OMR and the low-lying Pallikaranai freshwater marshland, monsoonal runoff naturally drains westward into the marsh basin. Urban infill across Perungudi, Thoraipakkam, and Sholinganallur constricts natural drainage channels, causing severe surface pooling along arterial roads.
+      </p>
+      <!-- Scenario values mirror the worker call in init() (rainfallMm: 150, runoffCoeff: 0.8) -->
+      <div class="chips">
+        <span class="chip">Rain scenario <b>150 mm</b></span>
+        <span class="chip">Runoff coeff. <b>0.8</b></span>
+      </div>
+      <a href="google3d.html" class="nav-btn">View in Google 3D <span aria-hidden="true">&rarr;</span></a>
+    </div></div>
   </header>
 
-  <!-- Bottom-Right Legend & Interaction Hint -->
-  <footer class="story-footer">
-    <div class="legend-card">
-      <div class="legend-item"><span class="swatch-dem"></span> 3x DEM Slab</div>
-      <div class="legend-item"><span class="swatch-road"></span> OSM Roads</div>
-      <div class="legend-item"><span class="swatch-marsh"></span> Pallikaranai Marsh</div>
-      <div class="legend-item"><span class="swatch-water"></span> Water Pooling</div>
+  <!-- Bottom dock: layer toggles + view controls -->
+  <nav class="dock" aria-label="Map layers and view">
+    <div class="dock-group" role="group" aria-label="Layers">
+      <button class="layer-btn" type="button" data-layer="water" aria-pressed="true"><span class="swatch sw-water"></span><span class="lbl">Pooling</span></button>
+      <button class="layer-btn" type="button" data-layer="marsh" aria-pressed="true"><span class="swatch sw-marsh"></span><span class="lbl">Marsh</span></button>
+      <button class="layer-btn" type="button" data-layer="roads" aria-pressed="true"><span class="swatch sw-road"></span><span class="lbl">Roads</span></button>
+      <button class="layer-btn" type="button" data-layer="rain" aria-pressed="true"><span class="swatch sw-rain"></span><span class="lbl">Rain</span></button>
+      <button class="layer-btn" type="button" data-layer="labels" aria-pressed="true"><span class="swatch sw-labels"></span><span class="lbl">Places</span></button>
     </div>
+    <div class="dock-sep" aria-hidden="true"></div>
+    <div class="dock-group" role="group" aria-label="View">
+      <button class="view-btn" type="button" id="btn-rotate" aria-pressed="true">Orbit</button>
+      <button class="view-btn" type="button" id="btn-reset">Reset</button>
+    </div>
+  </nav>
+
+  <div class="meta-bar">
     <div class="disclaimer-text">Visualisation, not an engineering flood model</div>
-    <div class="hint-text">DRAG TO ORBIT · SCROLL TO ZOOM · SHIFT+DRAG TO PAN</div>
-  </footer>
+    <div class="hint-text">Drag to orbit<br>Scroll to zoom<br>Shift + drag to pan</div>
+  </div>
 
   <!-- Import map: OrbitControls.js imports the bare specifier 'three', which browsers can't resolve without this -->
   <script type="importmap">
@@ -369,10 +278,13 @@
     const camera = new THREE.PerspectiveCamera(42, width / height, 1, 1200);
     camera.position.set(0, 95, 140);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
+    // Scene geometry is static: render the shadow map on demand (see needsUpdate calls) instead of every frame.
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
@@ -393,8 +305,8 @@
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.3);
     sunLight.position.set(70, 130, 60);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
     scene.add(sunLight);
 
     const fillLight = new THREE.DirectionalLight(0x406060, 0.5);
@@ -408,6 +320,15 @@
     const EXAG_FACTOR = 0.38;
 
     let gridData = null;
+    // Toggleable layers: objects are registered here as they are built; state applies on creation.
+    const layers = {};
+    const layerState = { water: true, marsh: true, roads: true, rain: true, labels: true };
+    function applyLayer(name) {
+      const on = layerState[name];
+      if (layers[name]) layers[name].visible = on;
+      if (name === 'rain') document.getElementById('rain-canvas').style.display = on ? '' : 'none';
+      if (name === 'labels') document.getElementById('labels-container').style.display = on ? '' : 'none';
+    }
     let labelObjects = [];
 
     function geoToWorld(lon, lat, elevM = 0) {
@@ -475,19 +396,20 @@
         }
       }
 
-      const indices = [];
+      const indices = new Uint32Array((rows - 1) * (cols - 1) * 6);
+      let ii = 0;
       for (let r = 0; r < rows - 1; r++) {
         for (let c = 0; c < cols - 1; c++) {
           const a = r * cols + c;
           const b = r * cols + (c + 1);
           const d = (r + 1) * cols + c;
           const e = (r + 1) * cols + (c + 1);
-          indices.push(a, d, b);
-          indices.push(b, d, e);
+          indices[ii++] = a; indices[ii++] = d; indices[ii++] = b;
+          indices[ii++] = b; indices[ii++] = d; indices[ii++] = e;
         }
       }
 
-      geometry.setIndex(indices);
+      geometry.setIndex(new THREE.BufferAttribute(indices, 1));
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       geometry.computeVertexNormals();
@@ -526,38 +448,42 @@
       const borderMat = new THREE.LineBasicMaterial({ color: 0x4a5d57, linewidth: 1 });
       const borderLine = new THREE.Line(borderGeom, borderMat);
       scene.add(borderLine);
+      renderer.shadowMap.needsUpdate = true; // terrain now exists: bake shadows once
 
       return terrainMesh;
     }
 
     // ── 5. Build OSM Roads as Off-White Lines ──────────────────────────────
     function createRoadsLines(roadsData) {
-      const linePositions = [];
+      // Inline lon/lat → world maths (same as geoToWorld) to avoid ~100k Vector3 allocations.
+      const { west, east, south, north, minH } = gridData;
+      const sx = PLANE_WIDTH / (east - west);
+      const sz = PLANE_LENGTH / (north - south);
+      let total = 0;
+      for (const road of roadsData) if (road.coords && road.coords.length > 1) total += road.coords.length - 1;
+      const linePositions = new Float32Array(total * 6);
+      let o = 0;
 
       for (const road of roadsData) {
         const coords = road.coords;
         if (!coords || coords.length < 2) continue;
-
-        for (let i = 0; i < coords.length - 1; i++) {
-          const [lon1, lat1] = coords[i];
-          const [lon2, lat2] = coords[i + 1];
-
-          const h1 = getElevationAt(lon1, lat1);
-          const h2 = getElevationAt(lon2, lat2);
-
-          const p1 = geoToWorld(lon1, lat1, h1);
-          const p2 = geoToWorld(lon2, lat2, h2);
-
-          p1.y += 0.08;
-          p2.y += 0.08;
-
-          linePositions.push(p1.x, p1.y, p1.z);
-          linePositions.push(p2.x, p2.y, p2.z);
+        let prevX = 0, prevY = 0, prevZ = 0;
+        for (let i = 0; i < coords.length; i++) {
+          const lon = coords[i][0], lat = coords[i][1];
+          const x = (lon - west) * sx - PLANE_WIDTH / 2;
+          const z = (north - lat) * sz - PLANE_LENGTH / 2;
+          // Elevation (m, EGM2008 orthometric) → world Y via the same minH/EXAG_FACTOR as the terrain.
+          const y = (getElevationAt(lon, lat) - minH) * EXAG_FACTOR + 0.08;
+          if (i > 0) {
+            linePositions[o++] = prevX; linePositions[o++] = prevY; linePositions[o++] = prevZ;
+            linePositions[o++] = x;     linePositions[o++] = y;     linePositions[o++] = z;
+          }
+          prevX = x; prevY = y; prevZ = z;
         }
       }
 
       const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+      geometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
 
       const material = new THREE.LineBasicMaterial({
         color: 0xe0dedb,
@@ -695,18 +621,18 @@
       }
     }
 
+    const labelScratch = new THREE.Vector3();
     function updateLabelsProjection() {
+      const scratch = labelScratch;
       const halfW = window.innerWidth * 0.5;
       const halfH = window.innerHeight * 0.5;
-      const scratch = new THREE.Vector3();
-
       for (let i = 0; i < labelObjects.length; i++) {
         const { el, pos } = labelObjects[i];
         scratch.copy(pos);
         scratch.project(camera);
 
         if (scratch.z > 1.0) {
-          el.style.display = 'none';
+          if (el._v !== 0) { el.style.display = 'none'; el._v = 0; }
           continue;
         }
 
@@ -715,12 +641,12 @@
 
         if (screenX < 20 || screenX > window.innerWidth - 20 ||
             screenY < 20 || screenY > window.innerHeight - 20) {
-          el.style.display = 'none';
+          if (el._v !== 0) { el.style.display = 'none'; el._v = 0; }
           continue;
         }
 
-        el.style.display = 'block';
-        el.style.transform = `translate(-50%, -100%) translate(${screenX}px, ${screenY}px)`;
+        if (el._v !== 1) { el.style.display = 'block'; el._v = 1; }
+        el.style.transform = `translate(-50%, -100%) translate(${screenX.toFixed(1)}px, ${screenY.toFixed(1)}px)`;
       }
     }
 
@@ -747,17 +673,21 @@
     }
 
     function updateAndDrawRain() {
+      if (!layerState.rain) return;
       rainCtx.clearRect(0, 0, rainWidth, rainHeight);
       rainCtx.lineWidth = 1.0;
+      // One batched path / one stroke() per frame (was 280 strokes); alpha is uniform.
+      rainCtx.strokeStyle = 'rgba(180, 230, 255, 0.3)';
+      rainCtx.beginPath();
+      for (let i = 0; i < NUM_STREAKS; i++) {
+        const s = streaks[i];
+        rainCtx.moveTo(s.x, s.y);
+        rainCtx.lineTo(s.x + 1.8, s.y + s.len);
+      }
+      rainCtx.stroke();
 
       for (let i = 0; i < NUM_STREAKS; i++) {
         const s = streaks[i];
-        rainCtx.strokeStyle = `rgba(180, 230, 255, ${s.alpha})`;
-
-        rainCtx.beginPath();
-        rainCtx.moveTo(s.x, s.y);
-        rainCtx.lineTo(s.x + 1.8, s.y + s.len);
-        rainCtx.stroke();
 
         s.y += s.speed;
         s.x += 1.8;
@@ -773,6 +703,23 @@
     }
 
     // ── 10. Load Data & Initialize Everything ──────────────────────────────
+    // fetch + JSON with a timeout, so a stalled request becomes a visible error, not a spinner.
+    async function fetchJson(url, timeoutMs = 20000) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status} loading ${url}`);
+        return await res.json();
+      } catch (err) {
+        if (err.name === 'AbortError') throw new Error(`Timed out after ${timeoutMs / 1000}s loading ${url}`);
+        if (err instanceof SyntaxError) throw new Error(`${url} is not valid JSON (${err.message})`);
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     async function init() {
       const loaderEl = document.getElementById('loading-indicator');
       const dismissLoader = () => {
@@ -780,60 +727,75 @@
           loaderEl.style.opacity = '0';
           setTimeout(() => loaderEl.remove(), 400);
         }
+        if (window.__bootReady) window.__bootReady();
+      };
+      // Failures stay on screen (the loader becomes the error message; it never auto-hides).
+      const showFailure = (msg) => {
+        console.error(msg);
+        if (loaderEl && loaderEl.parentNode) {
+          loaderEl.replaceChildren();
+          const span = document.createElement('span');
+          span.style.color = '#ff8a80';
+          span.textContent = `Error: ${msg}`;
+          loaderEl.appendChild(span);
+        }
+        if (window.__bootFail) window.__bootFail(msg);
       };
 
       try {
-        const [gridRes, roadsRes, labelsRes] = await Promise.all([
-          fetch('data/grid.json'),
-          fetch('data/roads.json'),
-          fetch('data/labels.json'),
+        const marshPromise = fetchJson('data/marsh.json'); // start early, in parallel
+        marshPromise.catch(() => {});
+        const [grid, roadsData, labelsData] = await Promise.all([
+          fetchJson('data/grid.json'),
+          fetchJson('data/roads.json'),
+          fetchJson('data/labels.json'),
         ]);
 
-        if (!gridRes.ok) throw new Error(`HTTP ${gridRes.status} loading data/grid.json`);
-        if (!roadsRes.ok) throw new Error(`HTTP ${roadsRes.status} loading data/roads.json`);
-        if (!labelsRes.ok) throw new Error(`HTTP ${labelsRes.status} loading data/labels.json`);
-
-        gridData = await gridRes.json();
+        gridData = grid;
         // grid.json stores the height range as `min`/`max` (EGM2008 orthometric, metres);
         // this file reads `minH`/`maxH`. Without this mapping every vertex height is NaN.
         gridData.minH = gridData.min;
         gridData.maxH = gridData.max;
-        const roadsData = await roadsRes.json();
-        const labelsData = await labelsRes.json();
+
+        // Yield between heavy stages so no single task blocks the main thread for long.
+        const yieldToMain = () => new Promise((r) => setTimeout(r, 0));
 
         // 1. Build Terrain
         createTerrainMesh(gridData);
+        await yieldToMain();
 
         // 2. Build Road lines
-        createRoadsLines(roadsData);
+        layers.roads = createRoadsLines(roadsData); applyLayer('roads');
+        await yieldToMain();
 
         // 3. Setup labels
         setupLabels(labelsData);
 
-        // 4. Load & Render Marshland
+        // 4. Load & Render Marshland (optional layer: report, but keep going)
         try {
-          const marshRes = await fetch('data/marsh.json');
-          if (marshRes.ok) {
-            const marshGeo = await marshRes.json();
-            createMarshLayer(marshGeo);
-          }
+          layers.marsh = createMarshLayer(await marshPromise); applyLayer('marsh');
         } catch (e) {
-          console.warn('Could not load marsh.json:', e);
+          console.warn('Marsh layer skipped:', e);
+          if (window.__bootFail) window.__bootFail(`Marsh outline not shown: ${e.message}`);
         }
 
         // 5. Run pooling worker for 150mm rainfall
         const worker = new Worker('js/pooling.worker.js', { type: 'module' });
+        let workerDone = false;
 
         worker.onerror = (err) => {
-          console.error('Pooling worker error:', err);
-          dismissLoader();
+          workerDone = true;
+          showFailure(`Water-pooling worker failed (${err.message || 'could not load js/pooling.worker.js'}).`);
         };
 
         worker.onmessage = (e) => {
+          workerDone = true;
           if (e.data.status === 'ok') {
-            createWaterLayer(e.data.depth);
+            layers.water = createWaterLayer(e.data.depth); applyLayer('water');
+            dismissLoader();
+          } else {
+            showFailure(`Water-pooling worker returned an error: ${e.data.error || e.data.status}`);
           }
-          dismissLoader();
         };
 
         worker.postMessage({
@@ -846,16 +808,45 @@
           runoffCoeff: 0.8,
         });
 
-        // Safeguard timeout: dismiss loader after 4s regardless
-        setTimeout(dismissLoader, 4000);
+        // The terrain and roads are already drawn, so don't hold the page hostage to a
+        // slow worker: after 8 s hide the spinner but say plainly that the water is missing.
+        setTimeout(() => {
+          if (!workerDone) {
+            dismissLoader();
+            if (window.__bootFail) window.__bootFail('Water pooling is taking unusually long; terrain and roads are shown without it.');
+          }
+        }, 8000);
       } catch (err) {
-        console.error('Initialization error:', err);
-        if (loaderEl) {
-          loaderEl.innerHTML = `<span style="color:#ef4444;">Error: ${err.message}</span>`;
-          setTimeout(dismissLoader, 3000);
-        }
+        showFailure(err.message || String(err));
       }
     }
+
+    // ── UI wiring: layer toggles, orbit/reset, collapsible panel ───────────
+    document.querySelectorAll('.layer-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.layer;
+        layerState[name] = !layerState[name];
+        btn.setAttribute('aria-pressed', String(layerState[name]));
+        applyLayer(name);
+      });
+    });
+    const rotateBtn = document.getElementById('btn-rotate');
+    rotateBtn.addEventListener('click', () => {
+      controls.autoRotate = !controls.autoRotate;
+      rotateBtn.setAttribute('aria-pressed', String(controls.autoRotate));
+    });
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      camera.position.set(0, 95, 140);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+    const panel = document.getElementById('story-panel');
+    const panelToggle = document.getElementById('panel-toggle');
+    panelToggle.addEventListener('click', () => {
+      const collapsed = panel.classList.toggle('collapsed');
+      panelToggle.setAttribute('aria-expanded', String(!collapsed));
+      panelToggle.setAttribute('aria-label', collapsed ? 'Expand story panel' : 'Collapse story panel');
+    });
 
     // ── 11. Animation Render Loop ──────────────────────────────────────────
     function animate() {

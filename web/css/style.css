@@ -116,7 +116,7 @@ input:focus-visible {
 
 .nav-story-link {
   font-family: 'Oswald', sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -182,7 +182,7 @@ input:focus-visible {
 
 .stat-label {
   font-family: 'Fira Code', monospace;
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   line-height: 1.45;
   color: var(--text-muted);
   margin-top: 6px;
@@ -194,7 +194,7 @@ input:focus-visible {
 .panel-label {
   display: block;
   font-family: 'Fira Code', monospace;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--accent-cyan);
   letter-spacing: 0.08em;
@@ -214,7 +214,7 @@ input:focus-visible {
   border-radius: var(--radius-sm);
   color: #fff;
   font-family: 'Fira Code', monospace;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   padding: 8px 30px 8px 10px;
   cursor: pointer;
   text-overflow: ellipsis;
@@ -295,7 +295,7 @@ input:focus-visible {
 .chart-title,
 .chart-subtitle {
   font-family: 'Fira Code', monospace;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   letter-spacing: 0.04em;
 }
 .chart-title { color: var(--text-muted); }
@@ -320,7 +320,7 @@ input:focus-visible {
   gap: 8px;
   margin-bottom: 8px;
   font-family: 'Fira Code', monospace;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--text-main);
 }
 .legend-item {
@@ -346,7 +346,7 @@ input:focus-visible {
   display: flex;
   justify-content: space-between;
   font-family: 'Fira Code', monospace;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   margin-top: 4px;
 }
@@ -515,7 +515,7 @@ input:focus-visible {
     bottom: 12px;
     text-align: center;
     padding: 5px 10px;
-    font-size: 0.7rem;
+    font-size: 0.78rem;
   }
 }
 
@@ -533,3 +533,43 @@ input:focus-visible {
   }
   .caption-word { transform: none; }
 }
+
+/* ── Reality-check score card (VALIDATE) ─────────────────────── */
+.validation-section[hidden] { display: none; }
+.validation-section {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.validation-section .vc-head { color: var(--text-main); font-size: 0.82rem; margin-bottom: 4px; }
+.validation-section .vc-line { margin-top: 3px; }
+.validation-section .vc-note { margin-top: 6px; font-size: 0.78rem; opacity: 0.75; }
+.validation-section b { color: var(--accent-cyan); font-variant-numeric: tabular-nums; }
+.validation-section.error { color: #ff8a80; }
+
+/* ── Zoom buttons ────────────────────────────────────────────── */
+.zoom-controls {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 84px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.zoom-btn {
+  width: 44px; height: 44px; /* touch target */
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.zoom-btn:hover { background: var(--btn-hover); border-color: var(--accent-cyan-line); }
+.zoom-btn:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
+@media (max-width: 640px) { .zoom-controls { bottom: 64px; } }

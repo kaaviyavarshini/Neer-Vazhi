@@ -1,0 +1,58 @@
+{
+  "michaung_2023": {
+    "totalMm": 257.7,
+    "hours": 120,
+    "static": {
+      "wet": 19894,
+      "roadKm": "63.93",
+      "peak": "11.97"
+    },
+    "flow": {
+      "wet": 42448,
+      "roadKm": "104.99",
+      "peak": "6.30"
+    }
+  },
+  "nov_dec_2015": {
+    "totalMm": 142.1,
+    "hours": 96,
+    "static": {
+      "wet": 15043,
+      "roadKm": "49.75",
+      "peak": "11.73"
+    },
+    "flow": {
+      "wet": 36863,
+      "roadKm": "71.83",
+      "peak": "3.84"
+    }
+  },
+  "heavy_day": {
+    "totalMm": 200,
+    "hours": 24,
+    "static": {
+      "wet": 17926,
+      "roadKm": "57.81",
+      "peak": "11.86"
+    },
+    "flow": {
+      "wet": 43217,
+      "roadKm": "107.19",
+      "peak": "4.46"
+    }
+  },
+  "gauge_440": {
+    "totalMm": 440,
+    "hours": 36,
+    "static": {
+      "wet": 24160,
+      "roadKm": "76.83",
+      "peak": "12.26"
+    },
+    "flow": {
+      "wet": 54214,
+      "roadKm": "177.05",
+      "peak": "7.99"
+    }
+  }
+}

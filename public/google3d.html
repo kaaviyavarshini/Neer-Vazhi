@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OMR Floods — Google Photorealistic 3D</title>
+
+  <!-- CesiumJS pinned via jsDelivr CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Widgets/widgets.css" />
+  <!-- Must load first: reports failed scripts / runtime errors on screen -->
+  <script src="js/boot-guard.js"></script>
+  <script>
+    window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/';
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.117.0/Build/Cesium/Cesium.js"></script>
+
+  <!-- Fonts: <link> (not CSS @import) so they don't block first render -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Oswald:wght@600;700&display=swap" rel="stylesheet" />
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Cesium 3D Viewport -->
+  <div id="cesiumContainer"></div>
+
+  <!-- Top-Left Title Overlay -->
+  <header class="header-overlay">
+    <div class="header-top-row">
+      <h1 class="header-title">OMR + Pallikaranai</h1>
+      <a href="story.html" class="nav-story-link" title="Open Keyless Three.js Scene">STORY VIEW &rarr;</a>
+    </div>
+    <div class="header-subtitle">OMR &amp; Pallikaranai Marsh · Google Photorealistic 3D + rain model</div>
+  </header>
+
+  <!-- Top-Right Inspector & Control Panel -->
+  <aside id="inspector-panel" class="inspector-overlay" aria-label="Rain and Flood Controls">
+    <!-- Header / Live Stats -->
+    <div class="panel-section stats-section">
+      <div class="stat-value" id="stat-road-km">0.00 km</div>
+      <div class="stat-label">of road under more than 15 cm of water</div>
+    </div>
+
+    <!-- Reality-check score card (VALIDATE button) -->
+    <div class="panel-section validation-section" id="validation-card" hidden aria-live="polite"></div>
+
+    <!-- Rain Control Section -->
+    <div class="panel-section rain-section">
+      <div class="control-row">
+        <label for="rain-preset-select" class="panel-label">RAIN EVENT</label>
+        <select id="rain-preset-select" class="panel-select"></select>
+      </div>
+
+      <div class="control-row slider-row">
+        <div class="slider-header">
+          <label for="rain-slider" class="panel-label">RAINFALL</label>
+          <span id="rain-slider-val" class="slider-value">150 mm</span>
+        </div>
+        <input type="range" id="rain-slider" class="panel-range" min="0" max="500" value="150" step="5" />
+      </div>
+
+      <!-- Hourly Rain Chart with Playhead -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <span class="chart-title">HOURLY RAIN</span>
+          <span id="chart-peak-info" class="chart-subtitle">Peak: --</span>
+        </div>
+        <canvas id="rain-chart" width="260" height="44" role="img" aria-label="Hourly rainfall chart for the selected rain event"></canvas>
+      </div>
+    </div>
+
+    <!-- Flood Depth Legend -->
+    <div class="panel-section legend-section">
+      <div class="legend-header">
+        <span class="panel-label">FLOOD DEPTH</span>
+      </div>
+      <div class="legend-items">
+        <div class="legend-item"><span class="legend-swatch" style="background:#ffeb3b;"></span> 15–30cm</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#ff9800;"></span> 30–60cm</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#f44336;"></span> &gt;60cm</div>
+      </div>
+      <div class="legend-gradient-bar"></div>
+      <div class="legend-labels">
+        <span>5 cm</span>
+        <span>50 cm</span>
+        <span>&gt;1 m</span>
+      </div>
+    </div>
+
+    <!-- Time-Step Simulation Controls -->
+    <div class="panel-section timestep-section" id="ts-panel" hidden>
+      <div class="control-row">
+        <span class="panel-label">TIME-STEP SIMULATION</span>
+        <span id="ts-status" class="chart-subtitle" style="color: #64b5f6;">Ready</span>
+      </div>
+      <div class="control-row" style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+        <button id="ts-run" class="control-btn" type="button" style="padding: 4px 10px; font-size: 11px;">RE-SIMULATE</button>
+        <button id="ts-play" class="control-btn" type="button" style="padding: 4px 12px; font-size: 13px;" title="Play / Pause">▶</button>
+        <span id="ts-hour-label" class="slider-value" style="font-size: 12px; color: #fff;">Hour 0 / 0</span>
+      </div>
+      <div class="control-row slider-row" style="margin-top: 6px;">
+        <input type="range" id="ts-slider" class="panel-range" min="0" max="0" value="0" step="1" />
+      </div>
+      <div class="control-row" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+        <label style="font-size: 11px; color: #cfd8dc; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <input type="checkbox" id="ts-marsh-full" style="accent-color: #00e5ff; cursor: pointer;" />
+          <span>Marsh Full (Block Okkiyam Outlet)</span>
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Centred Cinematic Caption Overlay -->
+  <div id="timeline-caption" class="caption-overlay" aria-live="polite"></div>
+
+  <!-- Bottom-Left Action Controls -->
+  <nav class="controls-overlay" aria-label="Scene Controls">
+    <button id="btn-collects" class="control-btn active" type="button" title="Toggle Surface Water Layer">COLLECTS</button>
+    <button id="btn-roads" class="control-btn active" type="button" title="Toggle Flooded Roads Layer">ROADS</button>
+    <button id="btn-validate" class="control-btn" type="button" title="Show known waterlogging spots and score the model against them">VALIDATE</button>
+    <button id="btn-replay" class="control-btn" type="button" title="Refly Camera to Study Area">REPLAY</button>
+    <button id="btn-mode-toggle" class="control-btn" type="button" title="Switch between static Priority-Flood and time-stepping model">MODE: STATIC</button>
+  </nav>
+
+  <!-- Bottom-Right Disclaimer -->
+  <aside class="disclaimer-overlay">
+    Visualisation, not an engineering flood model
+  </aside>
+
+  <!-- ES Module Entry Point -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -442,3 +442,21 @@ export function isWaterVisible() {
 export function isRoadsVisible() {
   return isRoadsLayerActive;
 }
+
+/**
+ * Update draped layers from a pre-computed depth array (time-step mode).
+ * Skips the pooling worker — directly renders the given Float32Array.
+ *
+ * @param {Object} options
+ * @param {Float32Array} options.depth - Water depth per cell in metres
+ * @param {Function} [options.onStatsUpdate] - Callback with { floodedRoadKm }
+ */
+export async function updateFromDepth({ depth, onStatsUpdate = null } = {}) {
+  if (!depth) return;
+  renderDrapedLayers(depth, onStatsUpdate);
+  return {
+    floodedRoadKm: totalFloodedKm,
+    waterEntitiesCount: waterCount,
+    roadEntitiesCount: roadCount,
+  };
+}

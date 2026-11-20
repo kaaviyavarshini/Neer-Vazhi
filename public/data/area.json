@@ -1,0 +1,23 @@
+{
+  "south": 12.89,
+  "west": 80.19,
+  "north": 12.99,
+  "east": 80.27,
+  "cellSizeM": 30,
+  "exaggeration": 10,
+  "runoffCoeff": 0.8,
+  "drops": 3000,
+  "outletCells": [
+    71284,
+    71285,
+    71573,
+    71574
+  ],
+  "outletCapacityM3h": null,
+  "marshFull": false,
+  "_outletNote": "Okkiyam Madavu outlet channel to Buckingham Canal at lat 12.9232, lon 80.2430 (rows 246-247, cols 190-191).",
+  "roadBurnM": 1.0,
+  "_notes": {
+    "roadBurnM": "Metres the terrain is lowered along every OSM road cell so rain runs down streets and collects in street dips that a 30 m surface DEM (rooftops, trees) hides. 1.0 m is an ASSUMPTION (typical 'stream-burn' depth for conditioning a DEM); 0 turns it off. It was NOT fitted to the validation data, but values 0.5/1/2 were all looked at when it was introduced, see docs/scores.md."
+  }
+}

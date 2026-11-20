@@ -93,3 +93,25 @@ python scripts/build_grid.py      # 5. build JSON for the web app
 python -m http.server 8765 --directory web   # 6. serve
 # open http://localhost:8765/story.html
 ```
+
+## Phase 2 rules
+These apply to all Phase 2 work and take priority over anything above that conflicts.
+
+1. **Never invent data.** Every dataset must come from a real file or URL and be
+   recorded in `data/SOURCES.md` (name, URL, date downloaded, licence, notes).
+   If data is missing, STOP and tell the user exactly what to download. Do not
+   fill gaps with placeholder, "typical" or made-up values.
+2. **Every assumption lives in `config/area.json`**, with a comment explaining it.
+   This covers the runoff coefficient, drain capacity, outlet capacity and any
+   similar tuning value. Never hard-code an assumption in a script or JS module.
+   JSON has no comments, so give each assumption a matching entry in a `_notes`
+   object in the same file (key = field name, value = what it is, why that value,
+   and its source or "assumption"). Scripts and the browser ignore unknown keys.
+3. **Validation and complaint data are ONLY for scoring the model**, never model
+   inputs. Keep them in `data/validation/`; only scoring code may read them. The
+   model (`pooling-core.js`, `pooling.worker.js`, `build_grid.py`) must not.
+4. **Every loading step must show an on-screen error if it fails.** No endless
+   spinners. Use a fetch timeout, report failures with `window.__bootFail(msg)`
+   and signal success with `window.__bootReady()` (see `web/js/boot-guard.js`).
+5. **After each step:** run the tests, tell the user exactly what to open and
+   what they should see, and list any assumptions you made.

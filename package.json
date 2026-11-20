@@ -5,8 +5,9 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
+    "dev": "next dev -p 8765",
+    "build": "next build",
+    "start": "next start -p 8765",
     "test": "node web/test/pooling.test.mjs",
     "config": "python scripts/make_config.py",
     "build:grid": "python scripts/build_grid.py"
@@ -20,5 +21,11 @@
     "omr"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.160.0"
+  }
 }

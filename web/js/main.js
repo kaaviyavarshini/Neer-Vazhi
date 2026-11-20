@@ -6,7 +6,7 @@
  * 1. Compact control panel at top-right:
  *    - Preset dropdown loaded from web/data/rain.json
  *    - Rainfall slider (0 to 500 mm) with live value label
- *    - Hourly precipitation bar chart with animated playhead during REPLAY
+ *    - Hourly precipitation bar chart with animated playhead during REPLAY / time-step playhead
  *    - Live road flood km stat badge and depth legend
  * 2. Real-time updates (<1s):
  *    - Changing rain or preset re-runs pooling in Web Worker and updates
@@ -16,6 +16,11 @@
  *    - Smooth camera orbits and fly-downs with quadratic easing
  *    - REPLAY button restarts from step 1
  *    - Esc key skips to end
+ * 4. Time-stepping model (MODE toggle: STATIC ↔ TIME-STEP):
+ *    - Runs flow.worker.js, streams hourly depth snapshots
+ *    - Time slider + play/pause button ("Hour 0 … N")
+ *    - Rain chart playhead tracks current hour
+ *    - Roads and water layers update each hour
  */
 
 import {
@@ -44,6 +49,7 @@ import {
   showPooling,
   hidePooling,
 } from './pooling.js';
+import { initValidation, refreshValidation, toggleValidation } from './validation.js';
 import {
   initRoads,
   showRealMapScene,
@@ -66,6 +72,22 @@ let currentPresetKey = 'michaung_2023';
 let currentRainfallMm = 150;
 let runoffCoeff = 0.8;
 let updateDebounceTimer = null;
+
+// ── Time-step mode ─────────────────────────────────────────────────────────
+// 'static' = Priority-Flood (default), 'timestep' = flow.worker.js
+let simMode = 'static';
+let loadedAreaConfig = null;
+
+// Snapshots received from flow.worker.js — one Float32Array per kept hour
+let flowSnapshots = [];
+let flowHourCount = 0;
+let currentHour = 0;
+let flowWorker = null;
+let flowWorkerBusy = false;
+
+// Play state
+let playIntervalId = null;
+let playSpeedMs = 1000; // ms per hour in playback
 
 // Timeline engine state
 let currentTimelineId = 0;
@@ -144,6 +166,7 @@ function clearCaption() {
  * Updates live telemetry badge.
  */
 function updateStatsBadge(stats) {
+  refreshValidation(); // re-score the reality-check rings against the new water depth
   const statRoadKm = document.getElementById('stat-road-km');
   if (statRoadKm && stats?.floodedRoadKm !== undefined) {
     statRoadKm.textContent = `${stats.floodedRoadKm} km`;
@@ -602,9 +625,12 @@ async function initScene() {
     const res = await fetch('data/area.json');
     if (!res.ok) throw new Error(`HTTP ${res.status} loading data/area.json`);
     areaConfig = await res.json();
+    loadedAreaConfig = areaConfig;
   } catch (e) {
     console.warn('Falling back to default bbox configuration:', e);
-    areaConfig = { south: 12.890, west: 80.190, north: 12.990, east: 80.270 };
+    showErrorMessage(`Could not load data/area.json (${e.message}); using the default study area.`);
+    areaConfig ={ south: 12.890, west: 80.190, north: 12.990, east: 80.270 };
+    loadedAreaConfig = areaConfig;
   }
 
   bbox.south = areaConfig.bbox?.south ?? areaConfig.south ?? 12.890;
@@ -621,6 +647,8 @@ async function initScene() {
     rainPresets = await rainRes.json();
   } catch (e) {
     console.warn('Failed to load rain.json:', e);
+    // Without this the Rain Event dropdown and hourly chart are silently empty.
+    showErrorMessage(`Could not load data/rain.json (${e.message}) — the Rain Event list and hourly chart will be empty.`);
   }
 
   const presetKeys = Object.keys(rainPresets);
@@ -633,7 +661,7 @@ async function initScene() {
   } else {
     currentRainfallMm = areaConfig.rainfall_mm ?? 150;
   }
-  runoffCoeff = areaConfig.runoff_coeff ?? 0.8;
+  runoffCoeff = areaConfig.runoffCoeff ?? areaConfig.runoff_coeff ?? 0.8; // area.json uses camelCase
 
   // Immediately populate rain inspector controls & chart
   setupRainControls();
@@ -660,6 +688,7 @@ async function initScene() {
     await initRain(viewer, areaConfig.drops || 3000);
     initPooling(viewer);
     await initRoads(viewer);
+    await initValidation(viewer);
 
     // Trigger initial calculation of road flooding km stat
     await updateRainfall({
@@ -687,6 +716,26 @@ async function initScene() {
       });
     }
 
+    // Zoom +/-: move the camera a fraction of its current height so steps feel the same at any distance
+    const zoomBy = (dir) => {
+      const h = viewer.camera.positionCartographic.height;
+      const step = Math.max(h * 0.3, 20); // metres
+      if (dir > 0) viewer.camera.zoomIn(step); else viewer.camera.zoomOut(step);
+    };
+    document.getElementById('btn-zoom-in')?.addEventListener('click', () => zoomBy(1));
+    document.getElementById('btn-zoom-out')?.addEventListener('click', () => zoomBy(-1));
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '+' || e.key === '=') zoomBy(1);
+      else if (e.key === '-' || e.key === '_') zoomBy(-1);
+    });
+
+    const btnValidate = document.getElementById('btn-validate');
+    if (btnValidate) {
+      btnValidate.addEventListener('click', () => {
+        btnValidate.classList.toggle('active', toggleValidation());
+      });
+    }
+
     if (btnReplay) {
       btnReplay.addEventListener('click', () => {
         playTimeline();
@@ -710,8 +759,12 @@ async function initScene() {
     window.skipToEnd = skipToEnd;
     window.toggleWater = toggleWaterLayer;
     window.toggleRoads = toggleRoadsLayer;
+    if (location.hash.includes('validate') && btnValidate) btnValidate.click(); // deep link: google3d.html#validate
 
-    // 6. Render initial state immediately so the page is NOT empty on load
+    // 6. Setup time-step controls
+    setupTimestepControls();
+
+    // 7. Render initial state immediately so the page is NOT empty on load
     if (!activeOutlineEntity) {
       activeOutlineEntity = addBoundingBoxOutline(viewer, bbox);
     }
@@ -729,9 +782,11 @@ async function initScene() {
       duration: 1.5,
       easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
     });
+    if (window.__bootReady) window.__bootReady(); // loading finished: stand the watchdog down
   } catch (err) {
     console.error('Failed to initialize 3D scene:', err);
     showErrorMessage(`Visualization Error: ${err.message}`);
+    if (window.__bootFail) window.__bootFail(`3D scene failed to start: ${err.message}`);
   }
 }
 
@@ -739,4 +794,247 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initScene);
 } else {
   initScene();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIME-STEP MODEL — flow.worker.js integration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Returns the grid heights and dimensions from the terrain module's grid object.
+ * We lazy-import { grid } from terrain.js to avoid circular dependency.
+ */
+async function getTerrainGrid() {
+  const { grid } = await import('./terrain.js');
+  return grid;
+}
+
+/**
+ * Starts the flow worker with the current rain preset and streams hourly snapshots.
+ * Shows progress in the time-step panel.
+ */
+async function runFlowSimulation() {
+  if (flowWorkerBusy) return;
+
+  const terrainGrid = await getTerrainGrid();
+  if (!terrainGrid || !terrainGrid.heights) {
+    showErrorMessage('Terrain grid not ready — cannot run time-stepping model.');
+    return;
+  }
+
+  const preset = rainPresets[currentPresetKey];
+  if (!preset || !preset.mm) {
+    showErrorMessage('No rain preset loaded for time-stepping model.');
+    return;
+  }
+
+  // Reset state
+  flowSnapshots = [];
+  flowHourCount = 0;
+  currentHour = 0;
+  stopPlay();
+
+  setTimeStepStatus('Running…');
+  setHourLabel(0, preset.mm.length);
+
+  if (flowWorker) {
+    flowWorker.terminate();
+  }
+  flowWorker = new Worker('js/flow.worker.js', { type: 'module' });
+  flowWorkerBusy = true;
+
+  flowWorker.addEventListener('message', (evt) => {
+    const msg = evt.data;
+    if (msg.type === 'hour') {
+      flowSnapshots[msg.hour] = msg.depth;
+      // Update slider max live as hours arrive
+      const slider = document.getElementById('ts-slider');
+      if (slider) slider.max = msg.hour;
+    } else if (msg.type === 'done') {
+      flowWorkerBusy = false;
+      flowHourCount = msg.totalHours;
+      const slider = document.getElementById('ts-slider');
+      if (slider) slider.max = flowSnapshots.length - 1;
+      setTimeStepStatus(`Ready — ${flowSnapshots.length} snapshots`);
+      // Show hour 0 immediately
+      showHourSnapshot(0);
+    } else if (msg.type === 'error') {
+      flowWorkerBusy = false;
+      setTimeStepStatus('Error: ' + msg.message);
+    }
+  });
+
+  flowWorker.addEventListener('error', (err) => {
+    flowWorkerBusy = false;
+    setTimeStepStatus('Worker error: ' + err.message);
+  });
+
+  const outletCells = loadedAreaConfig?.outletCells || [];
+  const marshFullCheckbox = document.getElementById('ts-marsh-full');
+  const marshFull = marshFullCheckbox ? marshFullCheckbox.checked : (loadedAreaConfig?.marshFull || false);
+
+  // Transfer heights buffer for zero-copy
+  const heightsCopy = new Float32Array(terrainGrid.heights);
+  flowWorker.postMessage({
+    type: 'run',
+    heights: heightsCopy,
+    cols: terrainGrid.cols,
+    rows: terrainGrid.rows,
+    rainSeries: preset.mm,
+    runoffCoeff,
+    outletCells,
+    subSteps: 60,
+    marshFull,
+  }, [heightsCopy.buffer]);
+}
+
+/**
+ * Shows a specific hour's depth snapshot on the draped layers.
+ * Uses updateRainfall's underlying depth-to-roads/water logic via a temporary
+ * override — for now we re-use the static roads layer's updateRainfall path
+ * but feed it a pre-computed depth array.
+ */
+async function showHourSnapshot(hour) {
+  const snap = flowSnapshots[hour];
+  if (!snap) return;
+
+  currentHour = hour;
+  setHourLabel(hour, flowHourCount);
+
+  // Sync rain chart playhead
+  if (flowHourCount > 0) {
+    const frac = hour / Math.max(flowHourCount - 1, 1);
+    drawRainChart(currentPresetKey, frac);
+  }
+
+  // Update the slider position
+  const slider = document.getElementById('ts-slider');
+  if (slider) slider.value = hour;
+
+  // Push depth snapshot to the roads/water layer
+  // We import updateFromDepth which accepts a pre-computed Float32Array
+  try {
+    const { updateFromDepth } = await import('./roads.js');
+    if (typeof updateFromDepth === 'function') {
+      await updateFromDepth({ depth: snap, onStatsUpdate: updateStatsBadge });
+    } else {
+      // Fallback: static update with equivalent total mm (approximate)
+      const preset = rainPresets[currentPresetKey];
+      const fractionDone = (hour + 1) / Math.max(flowHourCount, 1);
+      const partialMm = preset ? preset.total_mm * fractionDone : currentRainfallMm;
+      await updateRainfall({ rainfallMm: partialMm, runoffCoeff, onStatsUpdate: updateStatsBadge });
+    }
+  } catch (e) {
+    console.warn('[TimeStep] showHourSnapshot fallback:', e.message);
+  }
+}
+
+/** Start playback at 1 s/hour. */
+function startPlay() {
+  if (playIntervalId) return;
+  const btnPlay = document.getElementById('ts-play');
+  if (btnPlay) { btnPlay.textContent = '⏸'; btnPlay.title = 'Pause'; }
+
+  playIntervalId = setInterval(() => {
+    const nextHour = currentHour + 1;
+    if (nextHour >= flowSnapshots.length) {
+      stopPlay();
+      return;
+    }
+    showHourSnapshot(nextHour);
+  }, playSpeedMs);
+}
+
+/** Stop playback. */
+function stopPlay() {
+  if (playIntervalId) {
+    clearInterval(playIntervalId);
+    playIntervalId = null;
+  }
+  const btnPlay = document.getElementById('ts-play');
+  if (btnPlay) { btnPlay.textContent = '▶'; btnPlay.title = 'Play'; }
+}
+
+function setHourLabel(hour, total) {
+  const lbl = document.getElementById('ts-hour-label');
+  if (lbl) lbl.textContent = `Hour ${hour} / ${Math.max(total - 1, 0)}`;
+}
+
+function setTimeStepStatus(msg) {
+  const el = document.getElementById('ts-status');
+  if (el) el.textContent = msg;
+}
+
+/**
+ * Wires up the time-step panel controls.
+ * Called once after the viewer is ready.
+ */
+function setupTimestepControls() {
+  const btnMode = document.getElementById('btn-mode-toggle');
+  const tsPanel = document.getElementById('ts-panel');
+  const btnPlay = document.getElementById('ts-play');
+  const tsSlider = document.getElementById('ts-slider');
+  const btnRun = document.getElementById('ts-run');
+
+  if (btnMode) {
+    btnMode.addEventListener('click', () => {
+      if (simMode === 'static') {
+        simMode = 'timestep';
+        btnMode.textContent = 'MODE: TIME-STEP';
+        btnMode.classList.add('active');
+        if (tsPanel) tsPanel.hidden = false;
+      } else {
+        simMode = 'static';
+        btnMode.textContent = 'MODE: STATIC';
+        btnMode.classList.remove('active');
+        if (tsPanel) tsPanel.hidden = true;
+        stopPlay();
+        // Restore static view
+        updateRainfall({ rainfallMm: currentRainfallMm, runoffCoeff, onStatsUpdate: updateStatsBadge });
+      }
+    });
+  }
+
+  if (btnRun) {
+    btnRun.addEventListener('click', () => {
+      runFlowSimulation();
+    });
+  }
+
+  if (btnPlay) {
+    btnPlay.addEventListener('click', () => {
+      if (playIntervalId) {
+        stopPlay();
+      } else {
+        if (flowSnapshots.length === 0) {
+          runFlowSimulation().then(() => {
+            setTimeout(startPlay, 500);
+          });
+        } else {
+          if (currentHour >= flowSnapshots.length - 1) {
+            showHourSnapshot(0);
+          }
+          startPlay();
+        }
+      }
+    });
+  }
+
+  if (tsSlider) {
+    tsSlider.min = 0;
+    tsSlider.max = 0;
+    tsSlider.value = 0;
+    tsSlider.addEventListener('input', () => {
+      stopPlay();
+      const h = parseInt(tsSlider.value, 10);
+      showHourSnapshot(h);
+    });
+  }
+
+  const marshFullCheckbox = document.getElementById('ts-marsh-full');
+  if (marshFullCheckbox) {
+    marshFullCheckbox.addEventListener('change', () => {
+      runFlowSimulation();
+    });
+  }
 }

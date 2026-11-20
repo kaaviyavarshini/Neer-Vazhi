@@ -65,6 +65,9 @@ export async function createViewer(containerId = 'cesiumContainer') {
     skyAtmosphere: false,
   });
 
+  // Cap render resolution on high-DPI screens: big GPU/main-thread saving, barely visible on a map.
+  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 1.25);
+  viewer.scene.msaaSamples = 1;
   viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0e17');
   if (viewer.scene.globe) {
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0f172a');

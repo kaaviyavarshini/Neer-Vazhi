@@ -1,0 +1,427 @@
+[
+  {
+    "name": "Thiruvanmiyur",
+    "lon": 80.26442,
+    "lat": 12.98589
+  },
+  {
+    "name": "Perumbakkam",
+    "lon": 80.19947,
+    "lat": 12.90685
+  },
+  {
+    "name": "Sholinganallur",
+    "lon": 80.23069,
+    "lat": 12.89814
+  },
+  {
+    "name": "Adambakkam",
+    "lon": 80.20912,
+    "lat": 12.98222
+  },
+  {
+    "name": "Thoraipakkam",
+    "lon": 80.24071,
+    "lat": 12.95019
+  },
+  {
+    "name": "Perungudi",
+    "lon": 80.24181,
+    "lat": 12.97102
+  },
+  {
+    "name": "Nehru Nagar Industrial Estate",
+    "lon": 80.24754,
+    "lat": 12.97422
+  },
+  {
+    "name": "Madipakkam",
+    "lon": 80.20013,
+    "lat": 12.96113
+  },
+  {
+    "name": "Balaji Nagar",
+    "lon": 80.19057,
+    "lat": 12.97216
+  },
+  {
+    "name": "Puzhuthivakkam",
+    "lon": 80.20626,
+    "lat": 12.96914
+  },
+  {
+    "name": "Ram Nagar",
+    "lon": 80.21181,
+    "lat": 12.96536
+  },
+  {
+    "name": "Sadasiva Nagar",
+    "lon": 80.20285,
+    "lat": 12.96513
+  },
+  {
+    "name": "Lakshmi Hayagriva Nagar",
+    "lon": 80.21214,
+    "lat": 12.98543
+  },
+  {
+    "name": "Ullagaram",
+    "lon": 80.19672,
+    "lat": 12.97659
+  },
+  {
+    "name": "Kottivakkam",
+    "lon": 80.2615,
+    "lat": 12.97051
+  },
+  {
+    "name": "Palavakkam",
+    "lon": 80.25603,
+    "lat": 12.95999
+  },
+  {
+    "name": "Neelankarai",
+    "lon": 80.25747,
+    "lat": 12.9455
+  },
+  {
+    "name": "Vijaynagar",
+    "lon": 80.22099,
+    "lat": 12.97574
+  },
+  {
+    "name": "Sunnambu Kolathur",
+    "lon": 80.19635,
+    "lat": 12.94267
+  },
+  {
+    "name": "Narayanapuram",
+    "lon": 80.20838,
+    "lat": 12.9418
+  },
+  {
+    "name": "Jalladiampet",
+    "lon": 80.20169,
+    "lat": 12.91975
+  },
+  {
+    "name": "Karapakkam",
+    "lon": 80.23066,
+    "lat": 12.91775
+  },
+  {
+    "name": "Injambakkam",
+    "lon": 80.25129,
+    "lat": 12.91894
+  },
+  {
+    "name": "Union Carbide Colony",
+    "lon": 80.19315,
+    "lat": 12.97398
+  },
+  {
+    "name": "Thillai Ganga Nagar",
+    "lon": 80.19366,
+    "lat": 12.98984
+  },
+  {
+    "name": "Taramani",
+    "lon": 80.24041,
+    "lat": 12.98491
+  },
+  {
+    "name": "Devendra Nagar",
+    "lon": 80.25546,
+    "lat": 12.97876
+  },
+  {
+    "name": "PTC Colony",
+    "lon": 80.25652,
+    "lat": 12.97638
+  },
+  {
+    "name": "AGS Colony",
+    "lon": 80.25643,
+    "lat": 12.97459
+  },
+  {
+    "name": "Gangai Nagar",
+    "lon": 80.21592,
+    "lat": 12.98353
+  },
+  {
+    "name": "Kannagi Nagar",
+    "lon": 80.23967,
+    "lat": 12.92765
+  },
+  {
+    "name": "AGS Officers Colony",
+    "lon": 80.2097,
+    "lat": 12.97897
+  },
+  {
+    "name": "Maxworth Nagar",
+    "lon": 80.19949,
+    "lat": 12.94392
+  },
+  {
+    "name": "Srinivasa Nagar",
+    "lon": 80.24697,
+    "lat": 12.9503
+  },
+  {
+    "name": "PVS Nagar",
+    "lon": 80.24459,
+    "lat": 12.94718
+  },
+  {
+    "name": "Metukuppam",
+    "lon": 80.23705,
+    "lat": 12.93694
+  },
+  {
+    "name": "Pallikaranai",
+    "lon": 80.20777,
+    "lat": 12.93047
+  },
+  {
+    "name": "Kuberan Nagar",
+    "lon": 80.20623,
+    "lat": 12.95749
+  },
+  {
+    "name": "Sheela Nagar",
+    "lon": 80.20207,
+    "lat": 12.96505
+  },
+  {
+    "name": "Ramalinga Nagar",
+    "lon": 80.20585,
+    "lat": 12.96759
+  },
+  {
+    "name": "Avvai Nagar",
+    "lon": 80.25388,
+    "lat": 12.97738
+  },
+  {
+    "name": "Govindaswamy Nagar",
+    "lon": 80.24592,
+    "lat": 12.96857
+  },
+  {
+    "name": "Sangam Colony",
+    "lon": 80.25582,
+    "lat": 12.96739
+  },
+  {
+    "name": "Venkateshpuram",
+    "lon": 80.2524,
+    "lat": 12.96898
+  },
+  {
+    "name": "Swaminathan Nagar",
+    "lon": 80.25434,
+    "lat": 12.97135
+  },
+  {
+    "name": "Kandaswamy Nagar",
+    "lon": 80.25482,
+    "lat": 12.96618
+  },
+  {
+    "name": "NATCO Colony",
+    "lon": 80.25701,
+    "lat": 12.97073
+  },
+  {
+    "name": "Kannappa Nagar",
+    "lon": 80.25691,
+    "lat": 12.97555
+  },
+  {
+    "name": "Natesan Colony",
+    "lon": 80.25669,
+    "lat": 12.97309
+  },
+  {
+    "name": "Judge's Colony",
+    "lon": 80.24817,
+    "lat": 12.97596
+  },
+  {
+    "name": "MGR Nagar",
+    "lon": 80.24944,
+    "lat": 12.97958
+  },
+  {
+    "name": "Venkateshwara Nagar Colony",
+    "lon": 80.24463,
+    "lat": 12.977
+  },
+  {
+    "name": "Tirumalai Nagar",
+    "lon": 80.24558,
+    "lat": 12.9718
+  },
+  {
+    "name": "Jayendra Colony",
+    "lon": 80.24823,
+    "lat": 12.96983
+  },
+  {
+    "name": "Vikram Sarabhai Industrial Estate",
+    "lon": 80.25087,
+    "lat": 12.98096
+  },
+  {
+    "name": "Madura Kali Nagar",
+    "lon": 80.19383,
+    "lat": 12.95803
+  },
+  {
+    "name": "Karthikeyapuram",
+    "lon": 80.19452,
+    "lat": 12.96259
+  },
+  {
+    "name": "Park Square colony",
+    "lon": 80.19349,
+    "lat": 12.96566
+  },
+  {
+    "name": "Ram Nagar",
+    "lon": 80.19433,
+    "lat": 12.98489
+  },
+  {
+    "name": "Ram Nagar",
+    "lon": 80.19552,
+    "lat": 12.98863
+  },
+  {
+    "name": "Thillai Ganga Nagar",
+    "lon": 80.19329,
+    "lat": 12.98858
+  },
+  {
+    "name": "Baby Nagar",
+    "lon": 80.22919,
+    "lat": 12.98037
+  },
+  {
+    "name": "Dhandeeswaram",
+    "lon": 80.22419,
+    "lat": 12.98264
+  },
+  {
+    "name": "Seethapathy Nagar",
+    "lon": 80.22703,
+    "lat": 12.98195
+  },
+  {
+    "name": "Seshadripuram",
+    "lon": 80.23067,
+    "lat": 12.97984
+  },
+  {
+    "name": "Seva Nagar",
+    "lon": 80.22932,
+    "lat": 12.98641
+  },
+  {
+    "name": "Sony Nagar",
+    "lon": 80.22799,
+    "lat": 12.98651
+  },
+  {
+    "name": "Tansi Nagar",
+    "lon": 80.22402,
+    "lat": 12.97921
+  },
+  {
+    "name": "Udhayam Nagar",
+    "lon": 80.23217,
+    "lat": 12.97917
+  },
+  {
+    "name": "Bhuvaneswary Nagar",
+    "lon": 80.22195,
+    "lat": 12.96991
+  },
+  {
+    "name": "VGP Selva Nagar",
+    "lon": 80.2211,
+    "lat": 12.97122
+  },
+  {
+    "name": "Venus Colony",
+    "lon": 80.22772,
+    "lat": 12.9744
+  },
+  {
+    "name": "JagannathaPuram",
+    "lon": 80.22189,
+    "lat": 12.98468
+  },
+  {
+    "name": "Rajalakshmi Nagar",
+    "lon": 80.21874,
+    "lat": 12.98529
+  },
+  {
+    "name": "New Colony",
+    "lon": 80.2323,
+    "lat": 12.98271
+  },
+  {
+    "name": "Nanganallur Co-op Society Colony",
+    "lon": 80.19059,
+    "lat": 12.98796
+  },
+  {
+    "name": "Kamatchi Nagar",
+    "lon": 80.21586,
+    "lat": 12.94458
+  },
+  {
+    "name": "Kamakoti Nagar",
+    "lon": 80.21327,
+    "lat": 12.94104
+  },
+  {
+    "name": "Sai Nagar",
+    "lon": 80.23447,
+    "lat": 12.95163
+  },
+  {
+    "name": "Velachery",
+    "lon": 80.22092,
+    "lat": 12.97726
+  },
+  {
+    "name": "Kandanchavadi",
+    "lon": 80.24678,
+    "lat": 12.96292
+  },
+  {
+    "name": "Govindan Nagar",
+    "lon": 80.2521,
+    "lat": 12.95996
+  },
+  {
+    "name": "Okkiyampet",
+    "lon": 80.23246,
+    "lat": 12.93143
+  },
+  {
+    "name": "Akkarai",
+    "lon": 80.24787,
+    "lat": 12.9029
+  },
+  {
+    "name": "Vadakkupattu",
+    "lon": 80.19047,
+    "lat": 12.93397
+  }
+]
